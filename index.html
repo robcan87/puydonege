@@ -137,7 +137,6 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -152,9 +151,6 @@ if (!CFG || CFG.SUPABASE_URL.startsWith("PASTE_")) {
   throw new Error("config.js not filled in");
 }
 const db = createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
-if (CFG.EMAILJS_PUBLIC_KEY && !CFG.EMAILJS_PUBLIC_KEY.startsWith("PASTE_")) {
-  emailjs.init({ publicKey: CFG.EMAILJS_PUBLIC_KEY });
-}
 
 /* ---------- helpers ---------- */
 const pad = (n) => String(n).padStart(2, "0");
@@ -207,18 +203,14 @@ async function loadBookings() {
   renderAll();
 }
 
-async function sendNotification(b) {
-  if (!CFG.EMAILJS_SERVICE_ID || CFG.EMAILJS_SERVICE_ID.startsWith("PASTE_")) return false;
-  try {
-    await emailjs.send(CFG.EMAILJS_SERVICE_ID, CFG.EMAILJS_TEMPLATE_ID, {
-      to_email: CFG.NOTIFY_EMAIL,
-      booking_name: b.name,
-      booked_by: b.booked_by,
-      dates: `${fmtUK(b.start_date)} to ${fmtUK(b.end_date)}`,
-      note: b.note || "(no note)",
-    });
-    return true;
-  } catch { return false; }
+function notifyText(b) {
+  return `New Puydonege booking request:\n\n${b.name}\n${fmtUK(b.start_date)} to ${fmtUK(b.end_date)}${b.note ? "\n" + b.note : ""}\n\nOpen the Puydonege calendar to approve or decline.`;
+}
+function mailtoLink(b) {
+  return `mailto:${encodeURIComponent(CFG.NOTIFY_EMAIL)}?subject=${encodeURIComponent(`Puydonege booking request: ${b.name}, ${fmtShort(b.start_date)} to ${fmtShort(b.end_date)}`)}&body=${encodeURIComponent(notifyText(b))}`;
+}
+function whatsappLink(b) {
+  return `https://wa.me/?text=${encodeURIComponent(notifyText(b))}`;
 }
 
 async function addBooking() {
@@ -251,10 +243,13 @@ async function addBooking() {
   if (owner) {
     showFormMsg("ok", "Booking added and approved \u2014 it's in the calendar." + clashTxt);
   } else {
-    const sent = await sendNotification(data);
-    showFormMsg("ok", sent
-      ? "Request added and the approvers have been emailed automatically." + clashTxt
-      : "Request added, but the notification email failed to send \u2014 let the approvers know another way." + clashTxt);
+    const el = $("formMsg");
+    el.className = "msg ok";
+    el.innerHTML = `<div>Request added \u2014 now let the approvers know.${esc(clashTxt)}</div>
+      <div class="row" style="flex-wrap:wrap;margin-top:10px;gap:8px">
+        <a class="btn btn-dark" style="text-decoration:none;font-size:14px;padding:9px 14px" href="${mailtoLink(data)}">Email the approvers</a>
+        <a class="btn" style="background:#25D366;color:#fff;text-decoration:none;font-size:14px;padding:9px 14px" href="${whatsappLink(data)}" target="_blank" rel="noreferrer">Send on WhatsApp</a>
+      </div>`;
   }
   loadBookings();
 }
