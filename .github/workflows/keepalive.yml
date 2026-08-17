@@ -1,0 +1,26 @@
+# Pings the Supabase database twice a week so the free-tier project is never
+# paused for inactivity (Supabase pauses free projects after ~1 week idle).
+#
+# Note: GitHub disables scheduled workflows in repos with no commits for 60 days —
+# it emails a warning first, and one click re-enables it.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: "0 6 * * 1,4" # 06:00 UTC Mondays and Thursdays
+  workflow_dispatch: {} # allows a manual run from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query the bookings table
+        run: |
+          URL=$(grep -oP 'SUPABASE_URL:\s*"\K[^"]+' config.js)
+          KEY=$(grep -oP 'SUPABASE_ANON_KEY:\s*"\K[^"]+' config.js)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            "$URL/rest/v1/bookings?select=id&limit=1")
+          echo "Supabase responded with HTTP $STATUS"
+          test "$STATUS" = "200"

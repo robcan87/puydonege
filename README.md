@@ -60,3 +60,8 @@ The Puydonege watercolour is the app icon on the home screen.
 
 - Owners or the notify address: edit `config.js`, commit — done.
 - The data lives in Supabase → Table Editor → `bookings` if you ever need to fix an entry by hand.
+
+## Housekeeping (automatic + occasional)
+
+- A GitHub Action (`.github/workflows/keepalive.yml`) pings the database twice a week so the free Supabase project is never paused for inactivity. GitHub emails a warning if it disables the schedule after 60 days without commits — one click re-enables it.
+- Occasionally: Supabase → Storage → `ics` bucket, delete old files (one small file accrues per "Add to my calendar" tap); and Table Editor → `bookings` → Export to CSV as a backup.
