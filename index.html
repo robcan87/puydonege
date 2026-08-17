@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Puydonege Booking Calendar</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#22343A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Karla:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #22343A; --bg: #EEF2EF; --card-border: #DCE3DD; --muted: #5A6E66;
+    --green: #3E7C59; --amber: #D9A441; --brick: #B3543F; --blue: #4A6FA5; --cream: #F2EFE6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Karla', system-ui, sans-serif; padding-bottom: 60px; }
+  .display { font-family: 'Fraunces', Georgia, serif; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 18px 14px; }
+  .card { background: #fff; border-radius: 14px; border: 1px solid var(--card-border); padding: 16px; margin-bottom: 14px; }
+  .btn { border: none; border-radius: 10px; padding: 10px 16px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-dark { background: var(--ink); color: #fff; }
+  .btn-brick { background: var(--brick); color: #fff; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-plain { background: var(--bg); color: var(--ink); }
+  .linkbtn { background: var(--bg); border: 1px solid #C6D0C8; border-radius: 8px; padding: 7px 11px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; cursor: pointer; font-family: inherit; }
+  input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #C6D0C8; font-family: inherit; font-size: 15px; background: #FBFCFA; color: var(--ink); }
+  label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: block; margin-bottom: 5px; }
+  .chip { display: inline-block; color: #fff; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+  .dot { width: 12px; height: 12px; border-radius: 999px; display: inline-block; flex: none; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .hero { position: relative; background: #FDFCF8; }
+  .hero img { width: 100%; height: 230px; object-fit: cover; object-position: center 62%; display: block; }
+  .hero .fade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(34,52,58,0) 45%, rgba(34,52,58,0.82) 100%); }
+  .hero .titles { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 20px 14px; }
+  .hero .inner { max-width: 720px; margin: 0 auto; color: var(--cream); }
+  .grid7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .daycell { min-height: 52px; border-radius: 8px; padding: 4px 4px 3px; background: #FBFCFA; border: 1px solid #E4E9E4; }
+  .daycell.today { background: #E4EDE6; border: 2px solid var(--green); }
+  .bar { height: 7px; border-radius: 4px; margin-top: 3px; }
+  .msg { border-radius: 14px; border: 1px solid; padding: 14px 16px; margin-bottom: 14px; font-weight: 700; }
+  .msg.err { background: #FBEAE6; border-color: var(--brick); color: #7A3628; }
+  .msg.ok { background: #E8F2EA; border-color: var(--green); color: #2C5940; }
+  .note { font-size: 12px; color: var(--muted); }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <img src="assets/house.jpg" alt="Puydonege">
+  <div class="fade"></div>
+  <div class="titles"><div class="inner">
+    <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;opacity:0.85">The family guestbook</div>
+    <h1 class="display" style="font-size:28px;margin:4px 0 2px;font-weight:700;text-shadow:0 1px 8px rgba(34,52,58,0.55)">Puydonege Booking Calendar</h1>
+    <div style="font-size:13px;opacity:0.9">Book your stay and see who else is in.</div>
+  </div></div>
+</div>
+
+<div class="wrap">
+
+  <div id="globalMsg" class="msg err hidden"></div>
+
+  <!-- name -->
+  <div class="card">
+    <label>Your name</label>
+    <div id="nameSaved" class="row hidden">
+      <span class="dot" id="nameDot"></span>
+      <strong style="font-size:16px" id="nameText"></strong>
+      <span class="chip hidden" id="ownerChip" style="background:var(--blue)">Owner</span>
+      <button class="linkbtn" style="margin-left:auto" id="nameChange">Change</button>
+    </div>
+    <div id="nameEdit" class="row">
+      <input id="nameInput" placeholder="e.g. Robin">
+      <button class="btn btn-dark" id="nameSave">Save</button>
+    </div>
+  </div>
+
+  <!-- calendar -->
+  <div class="card">
+    <div class="row" style="margin-bottom:12px">
+      <button class="linkbtn" id="prevMonth">&#8592;</button>
+      <div class="display" id="monthLabel" style="flex:1;text-align:center;font-size:20px;font-weight:700"></div>
+      <button class="linkbtn" id="nextMonth">&#8594;</button>
+    </div>
+    <div class="grid7" style="font-size:11px;font-weight:700;color:var(--muted);text-align:center;margin-bottom:4px">
+      <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+    </div>
+    <div class="grid7" id="calGrid"></div>
+    <div class="note" style="margin-top:10px">Solid bar = approved &middot; faded bar = awaiting approval. Colours are per person.</div>
+  </div>
+
+  <!-- book -->
+  <button class="btn btn-green" id="openForm" style="width:100%;padding:14px;font-size:16px;margin-bottom:14px">Book a stay</button>
+
+  <div class="card hidden" id="bookForm">
+    <div class="display" style="font-size:18px;font-weight:700;margin-bottom:12px">Book a stay</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label>Arrival</label><input type="date" id="fStart"></div>
+      <div><label>Departure</label><input type="date" id="fEnd"></div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label>Who's staying</label>
+      <input id="fWho" placeholder="e.g. Rob & Shellee — leave blank to use your name">
+    </div>
+    <div style="margin-bottom:12px">
+      <label>Note (optional)</label>
+      <input id="fNote" placeholder="e.g. Half term with the kids">
+    </div>
+    <div class="row">
+      <button class="btn btn-green" id="submitBooking" style="flex:1">Request booking</button>
+      <button class="btn btn-plain" id="cancelForm">Cancel</button>
+    </div>
+  </div>
+
+  <div id="formMsg" class="msg hidden"></div>
+
+  <!-- upcoming -->
+  <div class="display" style="font-size:20px;font-weight:700;margin:8px 2px 10px">Upcoming stays</div>
+  <div id="upcomingList"></div>
+
+  <details id="pastWrap" class="hidden" style="margin-top:10px">
+    <summary style="font-weight:700;cursor:pointer;color:var(--muted)" id="pastSummary"></summary>
+    <div id="pastList"></div>
+  </details>
+
+  <div class="row" style="margin-top:18px">
+    <button class="linkbtn" id="refresh">Refresh</button>
+    <div class="note">Shared calendar — everyone with the link sees the same bookings.</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="config.js"></script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+const CFG = window.PUYDONEGE_CONFIG;
+const $ = (id) => document.getElementById(id);
+
+/* ---------- config check ---------- */
+if (!CFG || CFG.SUPABASE_URL.startsWith("PASTE_")) {
+  $("globalMsg").textContent = "Setup needed: fill in config.js following the README.";
+  $("globalMsg").classList.remove("hidden");
+  throw new Error("config.js not filled in");
+}
+const db = createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+if (CFG.EMAILJS_PUBLIC_KEY && !CFG.EMAILJS_PUBLIC_KEY.startsWith("PASTE_")) {
+  emailjs.init({ publicKey: CFG.EMAILJS_PUBLIC_KEY });
+}
+
+/* ---------- helpers ---------- */
+const pad = (n) => String(n).padStart(2, "0");
+const toKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromKey = (k) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+const fmtUK = (k) => fromKey(k).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+const fmtShort = (k) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+const overlaps = (aS, aE, bS, bE) => aS <= bE && bS <= aE;
+const compact = (k) => k.replaceAll("-", "");
+const nextDayKey = (k) => toKey(new Date(fromKey(k).getTime() + 86400000));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const PALETTE = ["#3E7C59", "#4A6FA5", "#8A5BA6", "#B3543F", "#2E8C88", "#96662B", "#5B5F97", "#7A8450"];
+const colourFor = (name) => {
+  let h = 0;
+  for (const c of (name || "?")) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+};
+const STATUS = {
+  pending: { label: "Awaiting approval", chip: "var(--amber)" },
+  approved: { label: "Approved", chip: "var(--green)" },
+  declined: { label: "Declined", chip: "var(--brick)" },
+};
+
+/* ---------- state ---------- */
+let bookings = [];
+let me = localStorage.getItem("puydonege:name") || "";
+const today = new Date();
+const todayKey = toKey(today);
+let cursor = new Date(today.getFullYear(), today.getMonth(), 1);
+
+const isOwner = () => CFG.OWNERS.map((o) => o.trim().toLowerCase()).includes(me.trim().toLowerCase());
+
+/* ---------- messages ---------- */
+const showGlobal = (text) => { $("globalMsg").textContent = text; $("globalMsg").classList.remove("hidden"); };
+const hideGlobal = () => $("globalMsg").classList.add("hidden");
+const showFormMsg = (type, text) => {
+  const el = $("formMsg");
+  el.className = "msg " + (type === "error" ? "err" : "ok");
+  el.textContent = text;
+};
+const hideFormMsg = () => $("formMsg").classList.add("hidden");
+
+/* ---------- data ---------- */
+async function loadBookings() {
+  const { data, error } = await db.from("bookings").select("*").order("start_date");
+  if (error) { showGlobal("Couldn't load bookings. Check your connection and refresh."); return; }
+  hideGlobal();
+  bookings = data;
+  renderAll();
+}
+
+async function sendNotification(b) {
+  if (!CFG.EMAILJS_SERVICE_ID || CFG.EMAILJS_SERVICE_ID.startsWith("PASTE_")) return false;
+  try {
+    await emailjs.send(CFG.EMAILJS_SERVICE_ID, CFG.EMAILJS_TEMPLATE_ID, {
+      to_email: CFG.NOTIFY_EMAIL,
+      booking_name: b.name,
+      booked_by: b.booked_by,
+      dates: `${fmtUK(b.start_date)} to ${fmtUK(b.end_date)}`,
+      note: b.note || "(no note)",
+    });
+    return true;
+  } catch { return false; }
+}
+
+async function addBooking() {
+  hideFormMsg();
+  const name = me.trim();
+  if (!name) { showFormMsg("error", "Add your name first, top of the page."); return; }
+  const start = $("fStart").value, end = $("fEnd").value;
+  if (!start || !end) { showFormMsg("error", "Pick an arrival and departure date."); return; }
+  if (end < start) { showFormMsg("error", "Departure is before arrival. Swap the dates."); return; }
+
+  const clash = bookings.find((b) => b.status !== "declined" && overlaps(start, end, b.start_date, b.end_date));
+  const owner = isOwner();
+  const label = $("fWho").value.trim() || name;
+
+  const row = {
+    name: label, booked_by: name, start_date: start, end_date: end,
+    note: $("fNote").value.trim(), status: owner ? "approved" : "pending",
+  };
+  const btn = $("submitBooking");
+  btn.disabled = true; btn.textContent = "Saving\u2026";
+  const { data, error } = await db.from("bookings").insert(row).select().single();
+  btn.disabled = false; btn.textContent = "Request booking";
+  if (error) { showFormMsg("error", "Couldn't save the booking. Check your connection and try again."); return; }
+
+  $("bookForm").classList.add("hidden");
+  $("openForm").classList.remove("hidden");
+  $("fStart").value = $("fEnd").value = $("fWho").value = $("fNote").value = "";
+
+  const clashTxt = clash ? ` Heads up: it overlaps ${clash.name}'s stay (${fmtShort(clash.start_date)} to ${fmtShort(clash.end_date)}).` : "";
+  if (owner) {
+    showFormMsg("ok", "Booking added and approved \u2014 it's in the calendar." + clashTxt);
+  } else {
+    const sent = await sendNotification(data);
+    showFormMsg("ok", sent
+      ? "Request added and the approvers have been emailed automatically." + clashTxt
+      : "Request added, but the notification email failed to send \u2014 let the approvers know another way." + clashTxt);
+  }
+  loadBookings();
+}
+
+async function setStatus(id, status) {
+  const { error } = await db.from("bookings").update({ status }).eq("id", id);
+  if (error) showGlobal("Couldn't update the booking. Try again.");
+  loadBookings();
+}
+async function removeBooking(id) {
+  if (!confirm("Remove this booking?")) return;
+  const { error } = await db.from("bookings").delete().eq("id", id);
+  if (error) showGlobal("Couldn't remove the booking. Try again.");
+  loadBookings();
+}
+
+/* ---------- calendar entry file ---------- */
+function downloadIcs(b) {
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Puydonege//EN", "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${b.id}@puydonege`,
+    `DTSTAMP:${compact(todayKey)}T000000Z`,
+    `DTSTART;VALUE=DATE:${compact(b.start_date)}`,
+    `DTEND;VALUE=DATE:${compact(nextDayKey(b.end_date))}`,
+    `SUMMARY:Puydonege: ${b.name}`,
+    b.note ? `DESCRIPTION:${b.note.replace(/\n/g, " ")}` : null,
+    "END:VEVENT", "END:VCALENDAR",
+  ].filter(Boolean).join("\r\n");
+  const a = document.createElement("a");
+  a.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
+  a.download = `puydonege-${b.name.replace(/\s+/g, "-")}-${b.start_date}.ics`;
+  a.click();
+}
+
+/* ---------- rendering ---------- */
+function renderName() {
+  if (me) {
+    $("nameSaved").classList.remove("hidden");
+    $("nameEdit").classList.add("hidden");
+    $("nameText").textContent = me;
+    $("nameDot").style.background = colourFor(me);
+    $("ownerChip").classList.toggle("hidden", !isOwner());
+  } else {
+    $("nameSaved").classList.add("hidden");
+    $("nameEdit").classList.remove("hidden");
+  }
+}
+
+function renderCalendar() {
+  const y = cursor.getFullYear(), m = cursor.getMonth();
+  $("monthLabel").textContent = cursor.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const lead = (new Date(y, m, 1).getDay() + 6) % 7;
+  const count = new Date(y, m + 1, 0).getDate();
+  const active = bookings.filter((b) => b.status !== "declined");
+  let html = "";
+  for (let i = 0; i < lead; i++) html += "<div></div>";
+  for (let d = 1; d <= count; d++) {
+    const k = toKey(new Date(y, m, d));
+    const dayB = active.filter((b) => b.start_date <= k && k <= b.end_date).slice(0, 3);
+    html += `<div class="daycell${k === todayKey ? " today" : ""}"><div style="font-size:12px;font-weight:700">${d}</div>` +
+      dayB.map((b) => `<div class="bar" title="${esc(b.name)}" style="background:${colourFor(b.name)};opacity:${b.status === "pending" ? 0.45 : 1}"></div>`).join("") +
+      "</div>";
+  }
+  $("calGrid").innerHTML = html;
+}
+
+function bookingCard(b) {
+  const st = STATUS[b.status];
+  const active = bookings.filter((x) => x.status !== "declined");
+  const clashes = b.status !== "declined" ? active.filter((o) => o.id !== b.id && overlaps(b.start_date, b.end_date, o.start_date, o.end_date)) : [];
+  let actions = "";
+  if (b.status === "pending") actions += `<button class="btn btn-green" style="padding:8px 14px;font-size:14px" data-act="approve" data-id="${b.id}">Approve</button>
+    <button class="btn btn-brick" style="padding:8px 14px;font-size:14px" data-act="decline" data-id="${b.id}">Decline</button>`;
+  if (b.status === "approved") actions += `<button class="btn btn-blue" style="padding:8px 14px;font-size:14px" data-act="ics" data-id="${b.id}">Add to my calendar</button>`;
+  if (b.status === "declined") actions += `<button class="linkbtn" data-act="reopen" data-id="${b.id}">Reopen request</button>`;
+  actions += `<button class="linkbtn" style="margin-left:auto;color:var(--brick)" data-act="remove" data-id="${b.id}">Remove</button>`;
+  return `<div class="card">
+    <div class="row" style="margin-bottom:6px">
+      <span class="dot" style="background:${colourFor(b.name)}"></span>
+      <strong style="font-size:16px">${esc(b.name)}</strong>
+      <span class="chip" style="background:${st.chip};margin-left:auto">${st.label}</span>
+    </div>
+    <div style="font-size:15px">${fmtUK(b.start_date)} &#8594; ${fmtUK(b.end_date)}</div>
+    ${b.note ? `<div style="font-size:14px;color:var(--muted);margin-top:4px">${esc(b.note)}</div>` : ""}
+    ${clashes.length ? `<div style="font-size:13px;color:#96662B;font-weight:700;margin-top:6px">Overlaps with ${esc(clashes.map((c) => c.name).join(", "))}</div>` : ""}
+    <div class="row" style="flex-wrap:wrap;margin-top:12px;gap:8px">${actions}</div>
+  </div>`;
+}
+
+function renderList() {
+  const upcoming = bookings.filter((b) => b.end_date >= todayKey);
+  const past = bookings.filter((b) => b.end_date < todayKey);
+  $("upcomingList").innerHTML = upcoming.length
+    ? upcoming.map(bookingCard).join("")
+    : `<div class="card" style="color:var(--muted)">Nothing booked yet. The house is free \u2014 book a stay above.</div>`;
+  $("pastWrap").classList.toggle("hidden", past.length === 0);
+  $("pastSummary").textContent = `Past stays (${past.length})`;
+  $("pastList").innerHTML = past.map((b) =>
+    `<div class="card" style="opacity:0.7;margin-top:10px"><strong>${esc(b.name)}</strong> &middot; ${fmtShort(b.start_date)} &#8594; ${fmtShort(b.end_date)} &middot; ${STATUS[b.status].label}</div>`
+  ).join("");
+}
+
+function renderAll() { renderName(); renderCalendar(); renderList(); }
+
+/* ---------- events ---------- */
+$("nameSave").onclick = () => {
+  const n = $("nameInput").value.trim();
+  if (!n) return;
+  me = n;
+  localStorage.setItem("puydonege:name", n);
+  renderAll();
+};
+$("nameChange").onclick = () => { $("nameSaved").classList.add("hidden"); $("nameEdit").classList.remove("hidden"); $("nameInput").value = me; };
+$("prevMonth").onclick = () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1); renderCalendar(); };
+$("nextMonth").onclick = () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1); renderCalendar(); };
+$("openForm").onclick = () => { $("bookForm").classList.remove("hidden"); $("openForm").classList.add("hidden"); hideFormMsg(); };
+$("cancelForm").onclick = () => { $("bookForm").classList.add("hidden"); $("openForm").classList.remove("hidden"); };
+$("submitBooking").onclick = addBooking;
+$("refresh").onclick = loadBookings;
+
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el) return;
+  const { act, id } = el.dataset;
+  const b = bookings.find((x) => String(x.id) === id);
+  if (act === "approve") setStatus(id, "approved");
+  if (act === "decline") setStatus(id, "declined");
+  if (act === "reopen") setStatus(id, "pending");
+  if (act === "remove") removeBooking(id);
+  if (act === "ics" && b) downloadIcs(b);
+});
+
+/* ---------- live updates ---------- */
+try {
+  db.channel("bookings-live")
+    .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => loadBookings())
+    .subscribe();
+} catch {}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) loadBookings(); });
+
+/* ---------- go ---------- */
+renderAll();
+loadBookings();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
